@@ -18,6 +18,8 @@ macro_rules! cmd {
                                    ( $( $rest )* ) )
     };
 
+    // ( @cmd_muncher ( $( $wip:tt )+ ) ( $( $rest:tt )* ) ) -> expr<duct::Expression>
+
     (@cmd_muncher ( $( $wip:tt )+ ) ( ) ) => {
         $crate::cmd!( @dcmd $( $wip )+ )
     };
@@ -103,6 +105,8 @@ macro_rules! cmd {
         $wip.pipe( $crate::cmd!( $( $rest )+ ) )
     };
 
+    // end @opt_muncher
+
     (@dcmd $bin:tt ) => {
         ::duct::cmd( $bin, [] as [&'static str; 0] )
     };
@@ -156,26 +160,46 @@ mod tests {
             assert_eq!(format!("{expr:?}"), &*d_trimmed);
         }
 
-        let _expr: duct::Expression = cmd!(bin);
-        let _expr: duct::Expression = cmd!("bin");
-        let _expr: duct::Expression = cmd!(bin arg1 arg2 arg3);
-        let _expr: duct::Expression = cmd!(bin "arg1a arg1b" arg2);
-        let _expr: duct::Expression = cmd!("bin" arg1);
-        let _expr: duct::Expression = cmd!("bin" "arg1");
+        case(cmd!(bin),
+             r#"
+                 Cmd(["bin"])
+             "#);
+        case(cmd!("bin"),
+             r#"
+                 Cmd(["bin"])
+             "#);
+        case(cmd!(bin arg1 arg2 arg3),
+             r#"
+                 Cmd(["bin", "arg1", "arg2", "arg3"])
+             "#);
+        case(cmd!(bin "arg1a arg1b" arg2),
+             r#"
+                 Cmd(["bin", "arg1a arg1b", "arg2"])
+             "#);
+        case(cmd!("bin" arg1),
+             r#"
+                 Cmd(["bin", "arg1"])
+             "#);
+        case(cmd!("bin" "arg1"),
+             r#"
+                 Cmd(["bin", "arg1"])
+             "#);
 
         case(cmd!(bin1 arg11 | bin2 arg21),
-r#"
-Pipe(Cmd(["bin1", "arg11"]), 
-     Cmd(["bin2", "arg21"])
-)"#);
+             r#"
+                 Pipe(Cmd(["bin1", "arg11"]), 
+                      Cmd(["bin2", "arg21"])
+                 )
+             "#);
 
         case(cmd!(bin1 arg11 | bin2 arg21 | bin3 arg31),
-r#"
-Pipe(Cmd(["bin1", "arg11"]), 
-     Pipe(Cmd(["bin2", "arg21"]), 
-          Cmd(["bin3", "arg31"])
-     )
-)"#);
+            r#"
+                Pipe(Cmd(["bin1", "arg11"]), 
+                     Pipe(Cmd(["bin2", "arg21"]), 
+                          Cmd(["bin3", "arg31"])
+                     )
+                )
+            "#);
 
 
         case(cmd!(bin arg1 > file),
